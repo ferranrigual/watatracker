@@ -12,6 +12,9 @@ dist/
 supabase/.branches
 supabase/.temp
 
+# MCP config (may contain credentials)
+.mcp.json
+
 # Editor
 .vscode/
 .idea/
