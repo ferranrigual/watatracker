@@ -28,7 +28,12 @@ watatracker/
 │   ├── App.tsx                 # Router + auth state
 │   ├── main.tsx                # Entry point
 │   └── index.css               # Tailwind imports
-├── .env.local                  # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+├── supabase/
+│   ├── config.toml             # Supabase CLI project config (auto-generated)
+│   └── migrations/
+│       └── 20240101000000_init.sql  # Schema migration
+├── .env.local                  # Local dev: points to local Supabase instance
+├── .env.example                # Template with placeholder values
 ├── tailwind.config.js
 ├── vite.config.ts
 └── package.json
@@ -83,18 +88,47 @@ npm install          # Install dependencies
 npm run dev          # Start dev server (localhost:5173)
 npm run build        # Production build to dist/
 npm run preview      # Preview production build locally
+
+# Local Supabase (requires Docker running)
+npx supabase start   # Start local Supabase — prints local URL + anon key
+npx supabase stop    # Stop local Supabase
+npx supabase db reset  # Reset local DB and re-run all migrations
 ```
 
 ## Environment Variables
 
-Required in `.env.local` (never commit this file):
+`.env.local` is never committed. It points to **local** Supabase during development:
 
+```
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=<printed by `npx supabase start`>
+```
+
+**Production** (Vercel): set these in Vercel project settings > Environment Variables:
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_ANON_KEY=your-cloud-anon-key
 ```
 
-Get these from: Supabase Dashboard > Project Settings > API.
+Cloud credentials come from: Supabase Dashboard > Project Settings > API.
+
+## Local Database Workflow
+
+The `supabase/` directory tracks your database schema as migration files. This means:
+- Local dev uses a local DB (no network, fast, free)
+- The same migrations apply to the cloud DB
+- Schema changes are version-controlled
+
+**First-time local setup:**
+1. Install Docker Desktop and make sure it is running
+2. `npx supabase init` — creates `supabase/config.toml` (only needed once)
+3. Create the migration file at `supabase/migrations/20240101000000_init.sql` with the schema SQL (see Database Schema section)
+4. `npx supabase start` — starts local instance, prints URL + anon key
+5. Copy those values into `.env.local`
+6. `npm run dev` — app now talks to local DB
+
+**Applying schema to the cloud DB:**
+After `supabase start` is confirmed working locally, run the SQL from the migration file manually in the Supabase cloud SQL Editor, or link the project with `npx supabase link` and push with `npx supabase db push`.
 
 ## Development Notes
 

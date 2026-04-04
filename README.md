@@ -12,50 +12,26 @@ A mobile-first web app for tracking daily habits. Tap "+" to log water intake, s
 
 ## Quick Start
 
-### 1. Set up Supabase
+### 1. Run locally (uses a local Supabase instance — no cloud account needed)
 
-1. Create a free project at [supabase.com](https://supabase.com)
-2. Go to SQL Editor and run this:
-
-```sql
-CREATE TABLE tracking_entries (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) NOT NULL,
-  category text NOT NULL CHECK (category IN ('water', 'strength', 'cardio')),
-  amount integer NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE tracking_entries ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can read own entries"
-  ON tracking_entries FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own entries"
-  ON tracking_entries FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-```
-
-3. Go to Project Settings > API and copy your URL and anon key.
-
-### 2. Run locally
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
 
 ```bash
 npm install
-cp .env.example .env.local
-# Edit .env.local with your Supabase URL and anon key
+npx supabase start        # First run downloads images, takes a few minutes
+# Copy the printed API URL and anon key into .env.local
 npm run dev
 ```
 
-Open http://localhost:5173 on your phone (use your computer's local IP).
+The schema is applied automatically from `supabase/migrations/` when `supabase start` runs.
 
-### 3. Deploy to Vercel
+### 2. Deploy to production
 
-1. Push this repo to GitHub
-2. Import it at [vercel.com](https://vercel.com)
-3. Add environment variables: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-4. Deploy
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Run the SQL in `supabase/migrations/20240101000000_init.sql` in the cloud SQL Editor
+3. Push this repo to GitHub
+4. Import at [vercel.com](https://vercel.com) and set env vars: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (from the cloud project)
+5. Deploy
 
 ## Tech Stack
 
@@ -77,16 +53,43 @@ This project is designed as a ~1 hour learning session. Follow these phases in o
 - [ ] Install Tailwind: `npm install -D tailwindcss @tailwindcss/vite`
 - [ ] Configure Tailwind in `vite.config.ts` (add the `@tailwindcss/vite` plugin)
 - [ ] Replace `src/index.css` with `@import "tailwindcss";`
-- [ ] Create `.env.example` with placeholder values
-- [ ] Create `.env.local` with real Supabase credentials (see Supabase setup)
+- [ ] Create `.env.example` with placeholder values (commit this)
 - [ ] Verify `npm run dev` shows the default Vite page
 
-### Phase 2: Supabase Setup (10 min)
+### Phase 2: Supabase Setup — local first (10 min)
 
-- [ ] Create a Supabase project (if not already done)
-- [ ] Run the SQL from the Quick Start section above in the SQL Editor
-- [ ] In Supabase Dashboard > Authentication > Providers, ensure Email provider is enabled
-- [ ] Disable "Confirm email" under Email provider settings (simpler for learning)
+Local dev uses a local Supabase instance (Docker). The cloud project is only needed for production.
+
+- [ ] Make sure Docker Desktop is running
+- [ ] Run `npx supabase init` — creates `supabase/config.toml`
+- [ ] Create the migration file `supabase/migrations/20240101000000_init.sql` with this SQL:
+
+```sql
+CREATE TABLE tracking_entries (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) NOT NULL,
+  category text NOT NULL CHECK (category IN ('water', 'strength', 'cardio')),
+  amount integer NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE tracking_entries ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own entries"
+  ON tracking_entries FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own entries"
+  ON tracking_entries FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+```
+
+- [ ] Run `npx supabase start` — this pulls Docker images and starts a local instance (first run is slow)
+- [ ] Copy the printed `API URL` and `anon key` into `.env.local`:
+  ```
+  VITE_SUPABASE_URL=http://127.0.0.1:54321
+  VITE_SUPABASE_ANON_KEY=<anon key from above>
+  ```
 - [ ] Create `src/lib/supabase.ts` — initialize the Supabase client:
   ```ts
   import { createClient } from '@supabase/supabase-js'
@@ -96,6 +99,7 @@ This project is designed as a ~1 hour learning session. Follow these phases in o
   )
   ```
 - [ ] Test connection: temporarily log `supabase.auth.getSession()` in main.tsx
+- [ ] Note: local Supabase has a built-in dashboard at http://127.0.0.1:54323 — use it to inspect data
 
 ### Phase 3: Authentication (10 min)
 
@@ -160,10 +164,16 @@ This project is designed as a ~1 hour learning session. Follow these phases in o
 
 ### Phase 6: Deploy (10 min)
 
-- [ ] Initialize git: `git init && git add -A && git commit -m "initial commit"`
-- [ ] Create a GitHub repo and push
-- [ ] Go to vercel.com, import the repo
-- [ ] Add environment variables in Vercel project settings
+**Apply schema to cloud Supabase:**
+- [ ] Create a cloud Supabase project at supabase.com (if not already done)
+- [ ] Go to SQL Editor and run the SQL from `supabase/migrations/20240101000000_init.sql`
+- [ ] In Authentication > Providers > Email: disable "Confirm email" (simpler for learning)
+
+**Deploy to Vercel:**
+- [ ] Commit everything: `git add -A && git commit -m "build: complete app"`
+- [ ] Push to GitHub: `git push`
+- [ ] Go to vercel.com, import the GitHub repo
+- [ ] Add environment variables in Vercel project settings (cloud Supabase URL + anon key)
 - [ ] Deploy and test the live URL on your phone
 - [ ] Add the Vercel URL to Supabase > Authentication > URL Configuration > Redirect URLs
 
