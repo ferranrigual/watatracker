@@ -94,16 +94,16 @@ export default function CategoryTab({ category, session }: Props) {
     fetchData()
   }, [category])
 
-  // Flush pending presses on unmount (e.g. switching tabs)
+  // Flush pending amount on unmount (e.g. switching tabs)
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
-      if (pendingRef.current > 0) flush()
+      if (pendingRef.current !== 0) flush()
     }
   }, [category])
 
   async function flush() {
-    const amount = pendingRef.current * config.increment
+    const amount = pendingRef.current
     pendingRef.current = 0
     if (amount === 0) return
     await supabase.from('tracking_entries').insert({
@@ -113,12 +113,16 @@ export default function CategoryTab({ category, session }: Props) {
     })
   }
 
-  function handleAdd() {
-    pendingRef.current += 1
-    setTotal((prev) => (prev ?? 0) + config.increment)
+  function handleChange(delta: number) {
+    const newTotal = Math.max((total ?? 0) + delta, 0)
+    if (newTotal === total) return
+
+    const actualDelta = newTotal - (total ?? 0)
+    pendingRef.current += actualDelta
+    setTotal(newTotal)
     setHistory((prev) =>
       prev.map((day) =>
-        day.isToday ? { ...day, total: day.total + config.increment } : day
+        day.isToday ? { ...day, total: Math.max(day.total + actualDelta, 0) } : day
       )
     )
 
@@ -133,7 +137,7 @@ export default function CategoryTab({ category, session }: Props) {
       <div className="text-center">
         <div className="text-5xl">{config.emoji}</div>
         <h2 className="mt-2 text-2xl font-bold text-white">{config.label}</h2>
-        <p className="mt-1 text-sm text-slate-400">+{config.increment} {config.unit} per tap</p>
+        <p className="mt-1 text-sm text-slate-400">{config.increment} {config.unit} per tap</p>
       </div>
 
       <div className="text-center">
@@ -143,13 +147,22 @@ export default function CategoryTab({ category, session }: Props) {
         <div className="mt-1 text-lg text-slate-400">{config.unit} today</div>
       </div>
 
-      <button
-        onClick={handleAdd}
-        className="flex h-20 w-20 items-center justify-center rounded-full bg-sky-600 text-4xl font-bold text-white shadow-lg shadow-sky-900/50 transition-transform active:scale-95"
-        aria-label={`Add ${config.increment} ${config.unit}`}
-      >
-        +
-      </button>
+      <div className="flex items-center gap-6">
+        <button
+          onClick={() => handleChange(-config.increment)}
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-700 text-3xl font-bold text-white shadow-lg transition-transform active:scale-95"
+          aria-label={`Remove ${config.increment} ${config.unit}`}
+        >
+          &minus;
+        </button>
+        <button
+          onClick={() => handleChange(config.increment)}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-sky-600 text-4xl font-bold text-white shadow-lg shadow-sky-900/50 transition-transform active:scale-95"
+          aria-label={`Add ${config.increment} ${config.unit}`}
+        >
+          +
+        </button>
+      </div>
 
       {history.length > 0 && (
         <div className="w-full max-w-sm px-4">
