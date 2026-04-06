@@ -32,7 +32,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/watatracker">
       <Routes>
         <Route
           path="/login"
