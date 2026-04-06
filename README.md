@@ -2,11 +2,7 @@
 
 A mobile-first web app for tracking daily habits. Tap "+" to log water intake, strength training, and cardio sessions. Built with React and Supabase.
 
-
-
-https://github.com/user-attachments/assets/2e916b49-9f0b-476d-951e-63732c92f696
-
-
+https://github.com/user-attachments/assets/87c2ce70-6d13-49a2-8db2-dbf4a7999733
 
 ## Features
 
