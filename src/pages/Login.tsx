@@ -30,6 +30,11 @@ export default function Login() {
       <h1 className="mb-8 text-3xl font-bold text-white">WataTracker</h1>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+        <p className="text-sm text-slate-400">
+          Pick a username (just your name, not an email). Use a throwaway
+          password — this is a toy app, so don't reuse a real one. Must be
+          at least 6 characters.
+        </p>
         <input
           type="text"
           placeholder="Username"
