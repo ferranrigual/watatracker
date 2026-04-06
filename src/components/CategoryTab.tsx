@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Category } from './BottomNav'
@@ -16,6 +16,8 @@ const CONFIG: Record<Category, CategoryConfig> = {
   cardio:   { label: 'Cardio',         emoji: '🏃', increment: 10,  unit: 'minutes' },
 }
 
+const FLUSH_DELAY = 600
+
 interface Props {
   category: Category
   session: Session
@@ -23,8 +25,9 @@ interface Props {
 
 export default function CategoryTab({ category, session }: Props) {
   const [total, setTotal] = useState<number | null>(null)
-  const [adding, setAdding] = useState(false)
   const config = CONFIG[category]
+  const pendingRef = useRef(0)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function fetchTotal() {
     const today = new Date()
@@ -48,15 +51,31 @@ export default function CategoryTab({ category, session }: Props) {
     fetchTotal()
   }, [category])
 
-  async function handleAdd() {
-    setAdding(true)
+  // Flush pending presses on unmount (e.g. switching tabs)
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (pendingRef.current > 0) flush()
+    }
+  }, [category])
+
+  async function flush() {
+    const amount = pendingRef.current * config.increment
+    pendingRef.current = 0
+    if (amount === 0) return
     await supabase.from('tracking_entries').insert({
       user_id: session.user.id,
       category,
-      amount: config.increment,
+      amount,
     })
-    await fetchTotal()
-    setAdding(false)
+  }
+
+  function handleAdd() {
+    pendingRef.current += 1
+    setTotal((prev) => (prev ?? 0) + config.increment)
+
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(flush, FLUSH_DELAY)
   }
 
   return (
@@ -76,8 +95,7 @@ export default function CategoryTab({ category, session }: Props) {
 
       <button
         onClick={handleAdd}
-        disabled={adding}
-        className="flex h-24 w-24 items-center justify-center rounded-full bg-sky-600 text-5xl font-bold text-white shadow-lg shadow-sky-900/50 transition-transform active:scale-95 disabled:opacity-50"
+        className="flex h-24 w-24 items-center justify-center rounded-full bg-sky-600 text-5xl font-bold text-white shadow-lg shadow-sky-900/50 transition-transform active:scale-95"
         aria-label={`Add ${config.increment} ${config.unit}`}
       >
         +
