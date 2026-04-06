@@ -21,7 +21,7 @@ watatracker/
 │   │   ├── CategoryTab.tsx     # Single category view: today's count + "+" button
 │   │   └── ProtectedRoute.tsx  # Auth guard wrapper
 │   ├── pages/
-│   │   ├── Login.tsx           # Email/password login & signup
+│   │   ├── Login.tsx           # Username/password login (auto-creates account on first use)
 │   │   └── Dashboard.tsx       # Main screen, hosts tabs
 │   ├── lib/
 │   │   └── supabase.ts         # Supabase client init
@@ -70,7 +70,7 @@ CREATE POLICY "Users can insert own entries"
 
 ## Key Patterns
 
-- **Auth:** Use `@supabase/supabase-js` client. Call `supabase.auth.signInWithPassword()` for login, `supabase.auth.signUp()` for registration. Session persists in localStorage automatically.
+- **Auth:** Username + password. The username is converted to a fake email (`username@watatracker.app`) internally. On submit, try `signInWithPassword` first; if that fails, call `signUp` to auto-create the account. Session persists in localStorage automatically.
 - **Auth state:** Listen to `supabase.auth.onAuthStateChange()` in App.tsx to track login state. Redirect unauthenticated users to Login.
 - **Inserting entries:** On "+" press, call `supabase.from('tracking_entries').insert({ user_id, category, amount })`.
 - **Querying today's total:** Query with `.select('amount')` filtered by `category` and `created_at` for today's date range, then sum client-side. Alternatively, use a Supabase RPC for server-side sum.
