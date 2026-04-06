@@ -8,6 +8,9 @@ dist/
 .env.local
 .env*.local
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Supabase local state
 supabase/.branches
 supabase/.temp
