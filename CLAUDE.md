@@ -8,7 +8,7 @@ WataTracker is a mobile-first daily activity tracker. Users log daily habits (wa
 
 - **Frontend:** React 18 + Vite + TypeScript + Tailwind CSS 3
 - **Backend:** Supabase (Auth + PostgreSQL + Row Level Security)
-- **Hosting:** Vercel (free tier)
+- **Hosting:** GitHub Pages (via GitHub Actions)
 - **Package manager:** npm
 
 ## Project Structure
@@ -97,7 +97,7 @@ VITE_SUPABASE_ANON_KEY=your-cloud-anon-key
 
 Credentials come from: Supabase Dashboard > Project Settings > API.
 
-**Production** (Vercel): set the same variables in Vercel project settings > Environment Variables.
+**Production** (GitHub Pages): set the same variables as repository secrets in GitHub → Settings → Secrets and variables → Actions.
 
 ## Development Notes
 
