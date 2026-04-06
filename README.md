@@ -10,7 +10,7 @@ https://github.com/user-attachments/assets/2e916b49-9f0b-476d-951e-63732c92f696
 
 ## Features
 
-- Email/password authentication with persistent sessions
+- Username/password authentication with persistent sessions
 - Three tracking categories: water (100ml increments), strength training (10min), cardio (10min)
 - Bottom tab navigation optimized for phone use
 - Each tap records immediately to the database
@@ -18,57 +18,10 @@ https://github.com/user-attachments/assets/2e916b49-9f0b-476d-951e-63732c92f696
 
 ## Quick Start
 
-### 1. Run locally (uses a local Supabase instance — no cloud account needed)
-
-Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
-
-```bash
-npm install
-npx supabase start        # First run downloads images, takes a few minutes
-# Copy the printed API URL and anon key into .env.local
-npm run dev
-```
-
-The schema is applied automatically from `supabase/migrations/` when `supabase start` runs.
-
-### 2. Deploy to production
+### 1. Set up Supabase
 
 1. Create a free project at [supabase.com](https://supabase.com)
-2. Run the SQL in `supabase/migrations/20240101000000_init.sql` in the cloud SQL Editor
-3. Push this repo to GitHub
-4. Import at [vercel.com](https://vercel.com) and set env vars: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (from the cloud project)
-5. Deploy
-
-## Tech Stack
-
-| Layer    | Technology                    |
-|----------|-------------------------------|
-| Frontend | React 18, Vite, TypeScript    |
-| Styling  | Tailwind CSS 3                |
-| Backend  | Supabase (Auth + PostgreSQL)  |
-| Hosting  | Vercel                        |
-
-## Implementation Plan
-
-This project is designed as a ~1 hour learning session. Follow these phases in order:
-
-### Phase 1: Scaffold (5 min)
-
-- [ ] Run `npm create vite@latest . -- --template react-ts` in this directory
-- [ ] Install dependencies: `npm install @supabase/supabase-js react-router-dom`
-- [ ] Install Tailwind: `npm install -D tailwindcss @tailwindcss/vite`
-- [ ] Configure Tailwind in `vite.config.ts` (add the `@tailwindcss/vite` plugin)
-- [ ] Replace `src/index.css` with `@import "tailwindcss";`
-- [ ] Create `.env.example` with placeholder values (commit this)
-- [ ] Verify `npm run dev` shows the default Vite page
-
-### Phase 2: Supabase Setup — local first (10 min)
-
-Local dev uses a local Supabase instance (Docker). The cloud project is only needed for production.
-
-- [ ] Make sure Docker Desktop is running
-- [ ] Run `npx supabase init` — creates `supabase/config.toml`
-- [ ] Create the migration file `supabase/migrations/20240101000000_init.sql` with this SQL:
+2. Run this SQL in the cloud SQL Editor:
 
 ```sql
 CREATE TABLE tracking_entries (
@@ -90,11 +43,58 @@ CREATE POLICY "Users can insert own entries"
   WITH CHECK (auth.uid() = user_id);
 ```
 
-- [ ] Run `npx supabase start` — this pulls Docker images and starts a local instance (first run is slow)
-- [ ] Copy the printed `API URL` and `anon key` into `.env.local`:
+3. Go to Authentication → Providers → Email and disable "Confirm email"
+
+### 2. Run locally
+
+```bash
+npm install
+cp .env.example .env.local
+# Fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY from your Supabase project settings
+npm run dev
+```
+
+### 3. Deploy to production
+
+1. In your GitHub repo, go to Settings → Secrets and variables → Actions and add:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+2. Go to Settings → Pages → Source and select **GitHub Actions**
+3. Push to `main` — the workflow builds and deploys automatically
+4. Add the Pages URL (`https://ferranrigual.github.io/watatracker/`) to Supabase → Authentication → URL Configuration → Redirect URLs
+
+## Tech Stack
+
+| Layer    | Technology                    |
+|----------|-------------------------------|
+| Frontend | React 18, Vite, TypeScript    |
+| Styling  | Tailwind CSS 3                |
+| Backend  | Supabase (Auth + PostgreSQL)  |
+| Hosting  | GitHub Pages                  |
+
+## Implementation Plan
+
+This project is designed as a ~1 hour learning session. Follow these phases in order:
+
+### Phase 1: Scaffold (5 min)
+
+- [ ] Run `npm create vite@latest . -- --template react-ts` in this directory
+- [ ] Install dependencies: `npm install @supabase/supabase-js react-router-dom`
+- [ ] Install Tailwind: `npm install -D tailwindcss @tailwindcss/vite`
+- [ ] Configure Tailwind in `vite.config.ts` (add the `@tailwindcss/vite` plugin)
+- [ ] Replace `src/index.css` with `@import "tailwindcss";`
+- [ ] Create `.env.example` with placeholder values (commit this)
+- [ ] Verify `npm run dev` shows the default Vite page
+
+### Phase 2: Supabase Setup (10 min)
+
+- [ ] Create a free project at [supabase.com](https://supabase.com)
+- [ ] Run the SQL from the Quick Start section above in the cloud SQL Editor
+- [ ] Go to Authentication → Providers → Email and disable "Confirm email"
+- [ ] Copy the project URL and anon key into `.env.local`:
   ```
-  VITE_SUPABASE_URL=http://127.0.0.1:54321
-  VITE_SUPABASE_ANON_KEY=<anon key from above>
+  VITE_SUPABASE_URL=https://your-project.supabase.co
+  VITE_SUPABASE_ANON_KEY=your-anon-key
   ```
 - [ ] Create `src/lib/supabase.ts` — initialize the Supabase client:
   ```ts
@@ -105,15 +105,13 @@ CREATE POLICY "Users can insert own entries"
   )
   ```
 - [ ] Test connection: temporarily log `supabase.auth.getSession()` in main.tsx
-- [ ] Note: local Supabase has a built-in dashboard at http://127.0.0.1:54323 — use it to inspect data
 
 ### Phase 3: Authentication (10 min)
 
 - [ ] Create `src/pages/Login.tsx`:
-  - Email + password form
-  - Two buttons: "Log in" and "Sign up"
-  - On login: `supabase.auth.signInWithPassword({ email, password })`
-  - On signup: `supabase.auth.signUp({ email, password })`
+  - Username + password form, single "Enter" button
+  - Construct a fake email: `` `${username}@watatracker.app` ``
+  - Try `signInWithPassword` first; if it fails, call `signUp` to auto-create the account
   - Show error messages inline
 - [ ] Create `src/components/ProtectedRoute.tsx`:
   - If no session, redirect to `/login`
@@ -122,7 +120,7 @@ CREATE POLICY "Users can insert own entries"
   - Add `react-router-dom` BrowserRouter
   - Track auth state with `supabase.auth.onAuthStateChange()`
   - Routes: `/login` (Login) and `/` (ProtectedRoute > Dashboard)
-- [ ] Test: sign up, refresh page (session should persist), log out
+- [ ] Test: enter a username and password, refresh page (session should persist), log out
 
 ### Phase 4: Core UI (15 min)
 
@@ -170,18 +168,13 @@ CREATE POLICY "Users can insert own entries"
 
 ### Phase 6: Deploy (10 min)
 
-**Apply schema to cloud Supabase:**
-- [ ] Create a cloud Supabase project at supabase.com (if not already done)
-- [ ] Go to SQL Editor and run the SQL from `supabase/migrations/20240101000000_init.sql`
-- [ ] In Authentication > Providers > Email: disable "Confirm email" (simpler for learning)
-
-**Deploy to Vercel:**
 - [ ] Commit everything: `git add -A && git commit -m "build: complete app"`
 - [ ] Push to GitHub: `git push`
-- [ ] Go to vercel.com, import the GitHub repo
-- [ ] Add environment variables in Vercel project settings (cloud Supabase URL + anon key)
-- [ ] Deploy and test the live URL on your phone
-- [ ] Add the Vercel URL to Supabase > Authentication > URL Configuration > Redirect URLs
+- [ ] In GitHub repo settings → Secrets and variables → Actions, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+- [ ] In GitHub repo settings → Pages → Source, select **GitHub Actions**
+- [ ] The push triggers the workflow — check the Actions tab to see it deploy
+- [ ] Test the live URL on your phone: `https://ferranrigual.github.io/watatracker/`
+- [ ] Add that URL to Supabase → Authentication → URL Configuration → Redirect URLs
 
 ## License
 
